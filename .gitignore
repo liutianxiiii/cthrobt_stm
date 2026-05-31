@@ -1,0 +1,17 @@
+# Build output
+build/
+*.elf
+*.bin
+*.hex
+*.map
+
+# Runtime logs
+received_signals.txt
+logs/
+
+# macOS
+.DS_Store
+
+# IDE
+.settings/
+*.launch

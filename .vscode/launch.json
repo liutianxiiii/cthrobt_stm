@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug via Renode",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "external",
+            "gdbTarget": "localhost:3333",
+            "executable": "${workspaceFolder}/build/Debug/cthrobt.elf",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "Build (Debug)",
+            "postLaunchCommands": [
+                "monitor start"
+            ],
+            "svdFile": "${workspaceFolder}/.vscode/STM32F767ZI.svd"
+        },
+        {
+            "name": "Debug via OpenOCD (real board)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "executable": "${workspaceFolder}/build/Debug/cthrobt.elf",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f7x.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "Build (Debug)"
+        }
+    ]
+}

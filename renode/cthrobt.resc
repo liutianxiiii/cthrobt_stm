@@ -1,0 +1,22 @@
+# Renode simulation script for cthrobt on NUCLEO-F767ZI
+# Run via bridge.py — do NOT run directly
+
+using sysbus
+mach create "nucleo-f767zi"
+machine LoadPlatformDescription @renode/nucleo_f767zi.repl
+
+sysbus LoadELF @build/Debug/cthrobt.elf
+
+# ETH_MACSR stub
+sysbus Tag <0x40028038 0x4> "ETH_MACSR" 0x0000FFFF
+
+# UART3: forward each line to stdout (captured by bridge.py)
+sysbus.usart3 AddLineHook "" "print '[UART3] ' + line"
+
+# GDB server
+machine StartGdbServer 3333
+
+logLevel 3
+
+start
+echo "=== STM32 simulation started, waiting for gamepad data via UART3 ==="
