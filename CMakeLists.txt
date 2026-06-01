@@ -98,6 +98,7 @@ target_link_options(${PROJECT_NAME}.elf PRIVATE
     -Wl,-Map=${PROJECT_NAME}.map
     -Wl,--gc-sections
     -Wl,--print-memory-usage
+    -u _printf_float
 )
 
 # ── Post-build: generate .bin and .hex ────────────────────────────────────────

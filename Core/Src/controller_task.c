@@ -99,7 +99,11 @@ static void parse_and_print(const char *json)
     }
 
     out[pos] = '\0';
+#ifdef SIMULATION_MODE
+    printf("[CTRL] %s\n", pos > 0 ? out : "(idle)");
+#else
     printf("[CTRL] %s\r\n", pos > 0 ? out : "(idle)");
+#endif
 }
 
 /* ── Per-connection handler ──────────────────────────────────────────────── */
