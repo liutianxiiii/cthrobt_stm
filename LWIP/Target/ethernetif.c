@@ -824,11 +824,6 @@ void ethernet_link_thread(void const * argument)
 
   for(;;)
   {
-#ifdef SKIP_PHY_INIT
-  /* Simulation: PHY not initialized, skip link polling */
-  osDelay(1000);
-  continue;
-#endif
   PHYLinkState = LAN8742_GetLinkState(&LAN8742);
 
   if(netif_is_link_up(netif) && (PHYLinkState <= LAN8742_STATUS_LINK_DOWN))

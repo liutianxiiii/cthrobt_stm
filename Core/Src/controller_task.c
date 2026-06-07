@@ -1,4 +1,5 @@
 #include "controller_task.h"
+#include "gripper.h"
 #include "lwip/api.h"
 #include "lwip/netif.h"
 #include "lwip/sys.h"
@@ -29,6 +30,10 @@ static void parse_and_print(const char *json)
     char out[OUT_BUF_SIZE];
     int  pos = 0;
 
+    /* Track previous A/B state for edge detection */
+    static int prev_a = 0, prev_b = 0;
+    int cur_a = 0, cur_b = 0;
+
     /* --- buttons: find "NAME":true pairs --- */
     const char *p = strstr(json, "\"buttons\":{");
     if (p) {
@@ -41,15 +46,24 @@ static void parse_and_print(const char *json)
             while (*p && *p != '"') { p++; nlen++; }
             if (*p == '"') p++;
             if (*p == ':') p++;
-            if (strncmp(p, "true", 4) == 0 && pos + nlen + 2 < OUT_BUF_SIZE) {
+            int pressed = (strncmp(p, "true", 4) == 0);
+            if (pressed && pos + nlen + 2 < OUT_BUF_SIZE) {
                 memcpy(out + pos, nstart, nlen);
                 pos += nlen;
                 out[pos++] = ' ';
             }
+            if (nlen == 1 && nstart[0] == 'A') cur_a = pressed;
+            if (nlen == 1 && nstart[0] == 'B') cur_b = pressed;
             while (*p && *p != ',' && *p != '}') p++;
             if (*p == ',') p++;
         }
     }
+
+    /* Gripper: trigger on rising edge only */
+    if (cur_a && !prev_a) gripper_close();
+    if (cur_b && !prev_b) gripper_open();
+    prev_a = cur_a;
+    prev_b = cur_b;
 
     /* --- axes: find "NAME":non-zero pairs --- */
     p = strstr(json, "\"axes\":{");
