@@ -1,5 +1,7 @@
 # cthrobt_stm — STM32 Gamepad Receiver Firmware
 
+[中文版](README.zh-CN.md)
+
 STM32F767ZI (Nucleo-F767ZI) firmware that receives Nintendo Switch Pro Controller input from `cthrobt` (PC side) and processes it in real-time. Supports both real hardware (Ethernet/LwIP) and Renode simulation (UART3 injection).
 
 ## Architecture
