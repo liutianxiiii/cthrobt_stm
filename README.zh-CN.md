@@ -83,6 +83,18 @@ UART3 输出 → bridge.py 捕获 → received_signals.txt
 
 ## 构建
 
+### 首次环境搭建
+
+首次使用前运行 setup 脚本，自动安装所有必需工具（arm-none-eabi-gcc、cmake、ninja、Renode）：
+
+```bash
+# macOS / Linux
+bash scripts/setup.sh
+
+# Windows
+scripts\setup.bat
+```
+
 ### 前置依赖
 
 | 工具 | 版本 | 安装方式 |
@@ -133,6 +145,7 @@ bash ../cthrobt/scripts/compare.sh
 
 | 脚本 | Windows | macOS/Linux | 说明 |
 |--------|---------|-------------|-------------|
+| **setup** | `scripts\setup.bat` | `bash scripts/setup.sh` | 首次安装所需工具：arm-none-eabi-gcc、cmake、ninja、Renode。克隆仓库后、首次构建前运行一次。 |
 | **build** | `scripts\build.bat` | `bash scripts/build.sh` | 配置并构建固件，自动定位 arm-none-eabi-gcc 和 ninja。输出：`build/Debug/cthrobt.elf`。首次克隆或修改源码后运行。 |
 | **run_simulation** | `scripts\run_simulation.bat` | `bash scripts/run_simulation.sh` | 使用 `cthrobt.elf` 启动 Renode 仿真。运行 `renode/bridge.py`：(1) 启动 Renode，(2) 在 TCP 7777 端口监听 controller.py，(3) 将收到的字节注入 STM32 UART3，(4) 将 STM32 输出捕获到 `received_signals.txt`。处理完所有数据后打印 "Log is ready for compare.py"。 |
 | **clean** | `scripts\clean.bat` | `bash scripts/clean.sh` | 完全删除 `build/` 目录。在完整重建或更换工具链版本前运行。 |

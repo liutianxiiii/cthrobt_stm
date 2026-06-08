@@ -82,6 +82,19 @@ UART3 output → bridge.py captures → received_signals.txt
 
 ## Build
 
+### First-time setup
+
+Run the setup script once to install all required tools (arm-none-eabi-gcc,
+cmake, ninja, Renode):
+
+```bash
+# macOS / Linux
+bash scripts/setup.sh
+
+# Windows
+scripts\setup.bat
+```
+
 ### Prerequisites
 
 | Tool | Version | Install |
@@ -132,6 +145,7 @@ All scripts are in the `scripts/` directory. Each has a `.bat` (Windows) and `.s
 
 | Script | Windows | macOS/Linux | Description |
 |--------|---------|-------------|-------------|
+| **setup** | `scripts\setup.bat` | `bash scripts/setup.sh` | First-time tool install: arm-none-eabi-gcc, cmake, ninja, Renode. Run once after cloning, before the first build. |
 | **build** | `scripts\build.bat` | `bash scripts/build.sh` | Configure and build the firmware. Automatically locates arm-none-eabi-gcc and ninja. Output: `build/Debug/cthrobt.elf`. Run after first clone or after changing source files. |
 | **run_simulation** | `scripts\run_simulation.bat` | `bash scripts/run_simulation.sh` | Start Renode simulation with `cthrobt.elf`. Launches `renode/bridge.py` which: (1) starts Renode, (2) listens on TCP 7777 for controller.py, (3) injects received bytes into STM32 UART3, (4) captures STM32 output to `received_signals.txt`. Prints "Log is ready for compare.py" when all data has been processed. |
 | **clean** | `scripts\clean.bat` | `bash scripts/clean.sh` | Delete the `build/` directory entirely. Run before a full rebuild or when switching toolchain versions. |
