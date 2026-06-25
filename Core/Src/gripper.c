@@ -2,49 +2,67 @@
 #include <stdio.h>
 
 /*
- * Gripper control — servo via TIM3 CH1 (PB4, AF2).
+ * Gripper control — pneumatic air cylinder via ModularCANLib on CAN1.
  *
- * Real hardware wiring:
- *   PB4 (CN9 pin 6 / Arduino D5) → servo signal wire
- *   5 V rail                     → servo power
- *   GND                          → servo ground
+ * Node ID = 0 (confirmed).  Air port: PORT_1 (device_num = 0).
  *
- * PWM spec (50 Hz, 1 µs tick):
- *   APB1 timer clock = 96 MHz, prescaler = 95 → 1 MHz tick
- *   ARR = 19999 → 20 ms period = 50 Hz
- *   CCR_CLOSE = 1000 → 1 ms pulse (closed position)
- *   CCR_OPEN  = 2000 → 2 ms pulse (open   position)
+ * IMPORTANT — gripper_init() is called from StartControllerTask() (not main),
+ * because ModularCANLib_WaitForConnect() and osDelay() in the port-init loop
+ * require the FreeRTOS scheduler to be running.
  *
- * Adjust CCR values to match your servo and gripper travel.
+ * IMPORTANT — ModularCANLib_AllDevice_And_CANSystem_Init() handles all CAN
+ * hardware init (filter banks, HAL_CAN_Start, interrupts).  can_bus_init()
+ * must NOT be called when this gripper is in use — they would double-init CAN1.
+ *
+ * TODO (before real-hardware build):
+ *   1. Copy ~/ModularCANLib/Inc/ and ~/ModularCANLib/Src/ into this project
+ *      (or add as a git submodule), and add source paths to CMakeLists.txt.
+ *   2. Add HAL_CAN callbacks to stm32f7xx_it.c — see gripper.h for the
+ *      two callback stubs that need to be added.
+ *   3. Confirm AIR_ON/AIR_OFF polarity (currently: AIR_ON = gripper closes).
+ *   4. Remove can_bus_init() call from main.c once wrist is also migrated.
  */
 
 #ifndef SIMULATION_MODE
-#include "stm32f7xx_hal.h"
+#include "ModularCANLib.h"
+#include "can.h"          /* extern CAN_HandleTypeDef hcan1 (CubeMX-generated) */
+#include "cmsis_os.h"     /* osDelay */
 
-#define GRIPPER_CHANNEL     TIM_CHANNEL_1
-#define GRIPPER_CCR_CLOSE   1000u
-#define GRIPPER_CCR_OPEN    2000u
+#define GRIPPER_NODE_ID  0   /* confirmed */
 
-/* htim3 is initialised by MX_TIM3_Init() in main.c */
-extern TIM_HandleTypeDef htim3;
-
-static void set_pwm(uint32_t ccr)
-{
-    __HAL_TIM_SET_COMPARE(&htim3, GRIPPER_CHANNEL, ccr);
-}
+static ModularCANLib_DeviceInfo_Type               *dev_info_air;
+static ModularCANLib_DeviceParam_CANBoards_Air_Type *air_param;
 #endif /* !SIMULATION_MODE */
 
 static GripperState g_state = GRIPPER_OPEN;
 
 void gripper_init(void)
 {
-#ifndef SIMULATION_MODE
-    /* MX_TIM3_Init() already configured the timer; just start PWM output */
-    HAL_TIM_PWM_Start(&htim3, GRIPPER_CHANNEL);
-    set_pwm(GRIPPER_CCR_OPEN);
-#endif
     g_state = GRIPPER_OPEN;
+#ifndef SIMULATION_MODE
+    /* Register device — second arg is the lookup name (arbitrary index, use 0) */
+    dev_info_air = ModularCANLib_DeviceInfo_Struct_Init(
+        ModularCANLib_DeviceType_CANBoards_AIR, 0);
+    dev_info_air->hcan    = &hcan1;
+    dev_info_air->node_id = GRIPPER_NODE_ID;
+
+    /* Init all devices + CAN1 (filter banks, HAL_CAN_Start, interrupts) */
+    ModularCANLib_AllDevice_And_CANSystem_Init();
+    ModularCANLib_WaitForConnect();
+
+    /* Init all 8 air ports (PORT_1=0 ... PORT_8=7) to OFF before use */
+    air_param = ModularCANLib_CANBoards_Air_GetDeviceParam(dev_info_air);
+    for (uint8_t i = PORT_1; i <= PORT_8; i++) {
+        air_param->device_num = i;
+        AirCylinder_Init(dev_info_air, AIR_OFF);
+        osDelay(10);
+    }
+    air_param->device_num = PORT_3;  /* AIR3 confirmed */
+
+    printf("[GRIPPER] init done\r\n");
+#else
     printf("[GRIPPER] init — state: OPEN\n");
+#endif
 }
 
 void gripper_close(void)
@@ -52,9 +70,12 @@ void gripper_close(void)
     if (g_state == GRIPPER_CLOSED) return;
     g_state = GRIPPER_CLOSED;
 #ifndef SIMULATION_MODE
-    set_pwm(GRIPPER_CCR_CLOSE);
-#endif
+    /* TODO: swap AIR_ON/AIR_OFF if the physical valve is wired inverted */
+    AirCylinder_SendOutput(dev_info_air, AIR_ON);
+    printf("[GRIPPER] CLOSE\r\n");
+#else
     printf("[GRIPPER] CLOSE\n");
+#endif
 }
 
 void gripper_open(void)
@@ -62,9 +83,11 @@ void gripper_open(void)
     if (g_state == GRIPPER_OPEN) return;
     g_state = GRIPPER_OPEN;
 #ifndef SIMULATION_MODE
-    set_pwm(GRIPPER_CCR_OPEN);
-#endif
+    AirCylinder_SendOutput(dev_info_air, AIR_OFF);
+    printf("[GRIPPER] OPEN\r\n");
+#else
     printf("[GRIPPER] OPEN\n");
+#endif
 }
 
 GripperState gripper_get_state(void)

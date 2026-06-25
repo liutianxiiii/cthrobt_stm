@@ -24,7 +24,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "controller_task.h"
-#include "gripper.h"
+#include "wrist.h"
+#ifndef SIMULATION_MODE
+#include "can_bus.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -125,7 +128,15 @@ int main(void)
   MX_TIM3_Init();
 #endif
   /* USER CODE BEGIN 2 */
-  gripper_init();
+  wrist_init();
+#ifndef SIMULATION_MODE
+  /* can_bus_init() initialises CAN1 for the wrist (raw CAN frames).
+   * gripper_init() is called from StartControllerTask() because
+   * ModularCANLib_WaitForConnect() and the port-init osDelay() calls
+   * require the FreeRTOS scheduler to be running. */
+  if (can_bus_init() != HAL_OK)
+      printf("[CAN] init failed\r\n");
+#endif
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */

@@ -55,6 +55,11 @@ include_directories(
     Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
     Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
     Drivers/BSP/Components/lan8742
+    Middlewares/ModularCANLib/Inc
+    Middlewares/ModularCANLib/Inc/CANBoards
+    Middlewares/ModularCANLib/Inc/RoboMas
+    Middlewares/ModularCANLib/Inc/RobStride
+    Middlewares/ModularCANLib/Inc/ODrive
 )
 
 # ── Source files ──────────────────────────────────────────────────────────────
@@ -82,12 +87,17 @@ file(GLOB_RECURSE LWIP_SOURCES
     "Middlewares/Third_Party/LwIP/system/OS/*.c"
 )
 
+file(GLOB_RECURSE MODULARCANLIB_SOURCES
+    "Middlewares/ModularCANLib/Src/*.c"
+)
+
 # ── Executable ────────────────────────────────────────────────────────────────
 add_executable(${PROJECT_NAME}.elf
     ${CORE_SOURCES}
     ${HAL_SOURCES}
     ${FREERTOS_SOURCES}
     ${LWIP_SOURCES}
+    ${MODULARCANLIB_SOURCES}
 )
 
 # ── Linker ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 #include "controller_task.h"
 #include "gripper.h"
+#include "wrist.h"
 #include "lwip/api.h"
 #include "lwip/netif.h"
 #include "lwip/sys.h"
@@ -30,9 +31,9 @@ static void parse_and_print(const char *json)
     char out[OUT_BUF_SIZE];
     int  pos = 0;
 
-    /* Track previous A/B state for edge detection */
-    static int prev_a = 0, prev_b = 0;
-    int cur_a = 0, cur_b = 0;
+    /* Track previous button state for edge detection */
+    static int prev_a = 0, prev_b = 0, prev_zr = 0;
+    int cur_a = 0, cur_b = 0, cur_zr = 0;
 
     /* --- buttons: find "NAME":true pairs --- */
     const char *p = strstr(json, "\"buttons\":{");
@@ -54,6 +55,7 @@ static void parse_and_print(const char *json)
             }
             if (nlen == 1 && nstart[0] == 'A') cur_a = pressed;
             if (nlen == 1 && nstart[0] == 'B') cur_b = pressed;
+            if (nlen == 2 && nstart[0] == 'Z' && nstart[1] == 'R') cur_zr = pressed;
             while (*p && *p != ',' && *p != '}') p++;
             if (*p == ',') p++;
         }
@@ -62,8 +64,15 @@ static void parse_and_print(const char *json)
     /* Gripper: trigger on rising edge only */
     if (cur_a && !prev_a) gripper_close();
     if (cur_b && !prev_b) gripper_open();
-    prev_a = cur_a;
-    prev_b = cur_b;
+    if (cur_zr && !prev_zr) {
+        if (wrist_get_position() == WRIST_HOME)
+            wrist_go_cw90();
+        else
+            wrist_go_home();
+    }
+    prev_a  = cur_a;
+    prev_b  = cur_b;
+    prev_zr = cur_zr;
 
     /* --- axes: find "NAME":non-zero pairs --- */
     p = strstr(json, "\"axes\":{");
@@ -161,6 +170,12 @@ void StartControllerTask(void const *argument)
     (void)argument;
 
     printf("[CTRL] Task started\r\n");
+
+#ifndef SIMULATION_MODE
+    /* gripper_init() must run here (task context) because ModularCANLib_WaitForConnect()
+     * and the port-init osDelay() calls require the FreeRTOS scheduler to be running. */
+    gripper_init();
+#endif
 
 #ifdef SIMULATION_MODE
     /* Simulation: read gamepad JSON lines from UART3 (injected by Renode bridge) */

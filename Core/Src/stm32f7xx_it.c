@@ -189,5 +189,20 @@ void ETH_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+#ifndef SIMULATION_MODE
+#include "ModularCANLib_Sys.h"
 
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+    ModularCANLib_Sys_MsgPendingCallback(hcan, CAN_RX_FIFO0);
+}
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+    ModularCANLib_Sys_MsgPendingCallback(hcan, CAN_RX_FIFO1);
+}
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
+    ModularCANLib_Sys_TryTransmit(hcan);
+}
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
+    ModularCANLib_Sys_TryTransmit(hcan);
+}
+#endif /* !SIMULATION_MODE */
 /* USER CODE END 1 */
